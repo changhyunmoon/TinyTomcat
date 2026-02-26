@@ -1,7 +1,9 @@
 package connector.protocol.http11;
 
+import connector.protocol.AbstractRequest;
 import connector.protocol.HttpRequest;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /*
@@ -33,46 +35,49 @@ import java.util.*;
         {"name": "Gemini", "age": 28}        <-- Message Body
  */
 
-public class Http11Request implements HttpRequest {
-
-    private String method;
-    private String uri;
-    private String protocol;
-    private final Map<String, String> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-    private byte[] body;
+public class Http11Request extends AbstractRequest {
 
     public Http11Request(InputStream input) throws IOException {
-
-        //Request Line 읽기
+        // 1. Request Line 읽기 (예: POST /hello?id=123 HTTP/1.1)
         String requestLine = readLine(input);
         if (requestLine == null || requestLine.isEmpty()) return;
         parseRequestLine(requestLine);
 
-        //Request Headers 읽기 (빈 줄이 나올 때까지)
+        // 2. Request Headers 읽기 (빈 줄이 나올 때까지)
         String headerLine;
         while (!(headerLine = readLine(input)).isEmpty()) {
-            parseHeaders(headerLine);
+            parseHeader(headerLine);
         }
 
-        //Request Body 읽기
+        // 3. Message Body 읽기 (Content-Length 기준)
         parseBody(input);
     }
 
     private void parseRequestLine(String line) {
         String[] parts = line.split(" ");
-        if (parts.length >= 3) {
-            this.method = parts[0];
-            this.uri = parts[1];
-            this.protocol = parts[2];
+        if (parts.length < 3) return;
+
+        this.method = parts[0];
+        String fullUri = parts[1];
+        this.protocol = parts[2];
+
+        // URI와 QueryString 분리 (? 기준)
+        int questionMarkIndex = fullUri.indexOf('?');
+        if (questionMarkIndex != -1) {
+            this.uri = fullUri.substring(0, questionMarkIndex);
+            // AbstractRequest에 구현된 파라미터 파싱 로직 호출
+            super.parseParameters(fullUri.substring(questionMarkIndex + 1));
+        } else {
+            this.uri = fullUri;
         }
     }
 
-    private void parseHeaders(String line) {
-        int colonIndex = line.indexOf(":");
+    private void parseHeader(String line) {
+        int colonIndex = line.indexOf(':');
         if (colonIndex != -1) {
             String key = line.substring(0, colonIndex).trim();
             String value = line.substring(colonIndex + 1).trim();
-            headers.put(key, value);
+            this.headers.put(key, value);
         }
     }
 
@@ -91,30 +96,34 @@ public class Http11Request implements HttpRequest {
         }
     }
 
-    //InputStream에서 한 바이트씩 읽어 CRLF(\r\n)를 만날 때까지 한 줄을 읽는다.
+    /**
+     * InputStream에서 CRLF(\r\n)를 만날 때까지 한 줄을 읽습니다.
+     */
     private String readLine(InputStream input) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         int b;
         while ((b = input.read()) != -1) {
             if (b == '\r') {
                 int next = input.read();
-                if (next == '\n') {
-                    break; // \r\n 발견 시 한 줄 읽기 종료
-                }
+                if (next == '\n') break; // \r\n 발견 시 종료
                 baos.write(b);
                 baos.write(next);
             } else {
                 baos.write(b);
             }
         }
-        // 헤더 끝에 도달했으나 데이터가 없는 경우를 처리
-        return baos.toString("UTF-8");
+        return baos.toString(StandardCharsets.UTF_8);
     }
 
-    @Override public String getMethod() { return method; }
-    @Override public String getUri() { return uri; }
-    @Override public String getProtocol() { return protocol; }
-    @Override public String getHeader(String name) { return headers.get(name); }
-    @Override public Map<String, String> getHeaders() { return Collections.unmodifiableMap(headers); }
-    @Override public byte[] getBody() { return body; }
+    @Override
+    public int getStreamId() {
+        return 0; // HTTP/1.1은 단일 스트림이므로 0 반환
+    }
+
+    @Override
+    public boolean isKeepAlive() {
+        String connection = headers.get("Connection");
+        if ("close".equalsIgnoreCase(connection)) return false;
+        return "keep-alive".equalsIgnoreCase(connection) || "HTTP/1.1".equals(protocol);
+    }
 }

@@ -30,13 +30,13 @@ import java.util.*;
  */
 
 public class Http11Response implements HttpResponse {
-
     private final OutputStream output;
     private int statusCode = 200;
-    private final Map<String, String> headers = new LinkedHashMap<>(); // 순서 유지를 위해 LinkedHashMap
+    private final Map<String, String> headers = new LinkedHashMap<>();
     private byte[] body = new byte[0];
-    private static final Map<Integer, String> statusMessages = new HashMap<>();
+    private boolean committed = false;
 
+    private static final Map<Integer, String> statusMessages = new HashMap<>();
     static {
         statusMessages.put(200, "OK");
         statusMessages.put(404, "Not Found");
@@ -45,70 +45,52 @@ public class Http11Response implements HttpResponse {
 
     public Http11Response(OutputStream output) {
         this.output = output;
-        // 기본 헤더 설정
-        addHeader("Server", "TinyTomcat/1.0");
-        addHeader("Content-Type", "text/html; charset=utf-8");
+        setHeader("Server", "TinyTomcat/1.0");
+        setHeader("Content-Type", "text/html; charset=utf-8");
     }
 
-    @Override
-    public void setStatus(int statusCode) {
-        this.statusCode = statusCode;
+    @Override public void setStatus(int statusCode) { this.statusCode = statusCode; }
+    @Override public void setHeader(String name, String value) { headers.put(name, value); }
+    @Override public void addHeader(String name, String value) { headers.put(name, value); }
+    @Override public void setContentType(String type) { setHeader("Content-Type", type); }
+    @Override public void setBody(byte[] body) { this.body = (body != null) ? body : new byte[0]; }
+    @Override public void setBody(String body) {
+        if (body != null) this.body = body.getBytes(StandardCharsets.UTF_8);
     }
 
-    @Override
-    public void addHeader(String name, String value) {
-        headers.put(name, value);
-    }
-
-    @Override
-    public void setHeader(String name, String value) {
-        headers.put(name, value); // Map은 키가 중복되지 않으므로 put 자체가 set의 역할을 합니다.
-    }
-
-    @Override
-    public void setBody(byte[] body) {
-        this.body = (body != null) ? body : new byte[0];
-    }
-
-    @Override
-    public void setBody(String body) {
-        if (body != null) {
-            this.body = body.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-        }
-    }
+    @Override public boolean isCommitted() { return committed; }
 
     @Override
     public void send() throws IOException {
-        //헤더 정보를 바이트로 변환하기 위해 StringBuilder 활용
-        StringBuilder headerBuilder = new StringBuilder();
+        if (committed) return;
 
-        // Status Line
-        String statusMessage = statusMessages.getOrDefault(statusCode, "Unknown");
-        headerBuilder.append("HTTP/1.1 ").append(statusCode).append(" ").append(statusMessage).append("\r\n");
+        StringBuilder sb = new StringBuilder();
+        // 1. Status Line
+        String msg = statusMessages.getOrDefault(statusCode, "Unknown");
+        sb.append("HTTP/1.1 ").append(statusCode).append(" ").append(msg).append("\r\n");
 
-        // Content-Length 갱신
+        // 2. Headers (Content-Length 자동 계산)
         headers.put("Content-Length", String.valueOf(body.length));
-
-        // Headers
         for (Map.Entry<String, String> entry : headers.entrySet()) {
-            headerBuilder.append(entry.getKey()).append(": ").append(entry.getValue()).append("\r\n");
+            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\r\n");
         }
 
-        // Empty Line
-        headerBuilder.append("\r\n");
+        // 3. Empty Line
+        sb.append("\r\n");
 
-        // 2. 헤더 전송 (UTF-8 바이트로 변환)
-        output.write(headerBuilder.toString().getBytes(StandardCharsets.UTF_8));
-
-        // 3. 바디 전송
+        // 전송
+        output.write(sb.toString().getBytes(StandardCharsets.UTF_8));
         if (body.length > 0) {
             output.write(body);
         }
-
-        // 4. 즉시 전송 보장
         output.flush();
+        this.committed = true;
+    }
 
-        // 주의: 여기서 output.close()를 하지 않아야 Keep-Alive 구현이 가능합니다.
+    @Override
+    public void finish() throws IOException {
+        if (!committed) send();
+        // HTTP/1.1에서는 여기서 close를 하지 않고 flush만 하여 Keep-Alive를 유지합니다.
+        output.flush();
     }
 }
-
