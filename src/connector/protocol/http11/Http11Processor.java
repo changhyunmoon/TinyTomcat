@@ -36,6 +36,9 @@ public class Http11Processor {
                 // 3. 서블릿 컨테이너(Context)로 전달하여 로직 실행 (Dispatch)
                 context.dispatch(request, response);
 
+                //실제 브라우저로 응답 데이터 전송
+                response.finish();
+
                 // 4. Keep-Alive 여부 확인
                 // 헤더에 Connection: close가 있거나, Keep-Alive가 명시되지 않은 경우 루프 종료
                 if (!request.isKeepAlive()) {

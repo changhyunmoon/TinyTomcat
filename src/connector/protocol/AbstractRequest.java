@@ -40,6 +40,21 @@ public abstract class AbstractRequest implements HttpRequest {
 
     @Override public String getMethod() { return method; }
     @Override public String getUri() { return uri; }
+    @Override
+    public String getRequestURI() {
+        if (uri == null) return null;
+
+        // URI에서 쿼리 스트링(?) 위치를 찾음
+        int questionMarkIndex = uri.indexOf('?');
+
+        // '?'가 없으면 URI 전체가 경로임
+        if (questionMarkIndex == -1) {
+            return uri;
+        }
+
+        // '?' 이전까지만 잘라서 반환
+        return uri.substring(0, questionMarkIndex);
+    }
     @Override public String getProtocol() { return protocol; }
     @Override public String getHeader(String name) { return headers.get(name); }
     @Override public Map<String, String> getHeaders() { return Collections.unmodifiableMap(headers); }
