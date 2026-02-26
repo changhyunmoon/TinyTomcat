@@ -1,6 +1,6 @@
-package protocol.http11;
+package connector.protocol.http11;
 
-import protocol.HttpResponse;
+import connector.protocol.HttpResponse;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -58,6 +58,11 @@ public class Http11Response implements HttpResponse {
     @Override
     public void addHeader(String name, String value) {
         headers.put(name, value);
+    }
+
+    @Override
+    public void setHeader(String name, String value) {
+        headers.put(name, value); // Map은 키가 중복되지 않으므로 put 자체가 set의 역할을 합니다.
     }
 
     @Override

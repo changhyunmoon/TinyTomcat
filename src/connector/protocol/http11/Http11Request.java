@@ -1,6 +1,6 @@
-package protocol.http11;
+package connector.protocol.http11;
 
-import protocol.HttpRequest;
+import connector.protocol.HttpRequest;
 import java.io.*;
 import java.util.*;
 
