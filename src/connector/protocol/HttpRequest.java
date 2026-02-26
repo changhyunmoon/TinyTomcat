@@ -1,4 +1,4 @@
-package protocol;
+package connector.protocol;
 
 import java.util.Map;
 

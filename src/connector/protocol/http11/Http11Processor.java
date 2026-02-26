@@ -1,7 +1,7 @@
-package protocol.http11;
+package connector.protocol.http11;
 
-import protocol.HttpRequest;
-import protocol.HttpResponse;
+import connector.protocol.HttpRequest;
+import connector.protocol.HttpResponse;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;

@@ -1,4 +1,4 @@
-package protocol.http11;
+package connector.protocol.http11;
 
 import connector.ProtocolHandler;
 
