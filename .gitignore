@@ -1,8 +1,20 @@
 ### IntelliJ IDEA ###
+.idea/
+*.iws
+*.iml
+*.ipr
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
 .kotlin
+
+### Build Tools (Gradle/Maven) ###
+# 이 부분을 추가해야 빌드 결과물이 깃허브에 올라가지 않습니다.
+build/
+bin/
+target/
+.gradle/
+.settings/
 
 ### Eclipse ###
 .apt_generated
@@ -26,5 +38,11 @@ bin/
 ### VS Code ###
 .vscode/
 
-### Mac OS ###
+### Mac OS & Windows ###
 .DS_Store
+Thumbs.db
+
+### Database & Secrets (보안상 중요) ###
+# 현재 사용 중인 Supabase나 DB 설정 정보가 담긴 파일이 있다면 제외하세요.
+.env
+*.log
