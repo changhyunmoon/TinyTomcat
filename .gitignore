@@ -1,47 +1,48 @@
-### JetBrains (IntelliJ IDEA) ###
+### IntelliJ IDEA ###
 .idea/
 *.iws
 *.iml
 *.ipr
 out/
-!**/src/main/resources/  # 리소스 폴더는 제외하지 않도록 설정
+!**/src/main/**/out/
+!**/src/test/**/out/
+.kotlin
 
-### Build Tools (Maven/Gradle) ###
-# Maven
-target/
-pom.xml.tag
-pom.xml.releaseBackup
-pom.xml.versionsBackup
-pom.xml.restoreBackup
-release.properties
-bundle.properties
-dependency-reduced-pom.xml
-buildNumber.properties
-.mvn/timing.properties
-.mvn/wrapper/maven-wrapper.jar
-
-# Gradle
-.gradle/
+### Build Tools (Gradle/Maven) ###
+# 이 부분을 추가해야 빌드 결과물이 깃허브에 올라가지 않습니다.
 build/
-!gradle/wrapper/gradle-wrapper.jar
-
-### Java ###
-*.class
-*.log
-*.ctxt
-.mtj.tmp/
-*.jar
-*.war
-*.nar
-*.ear
-*.zip
-*.tar.gz
-*.rar
-
-### OS & Misc ###
-.DS_Store
-Thumbs.db
+bin/
+target/
+.gradle/
 .settings/
-.project
+
+### Eclipse ###
+.apt_generated
 .classpath
 .factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+### Mac OS & Windows ###
+.DS_Store
+Thumbs.db
+
+### Database & Secrets (보안상 중요) ###
+# 현재 사용 중인 Supabase나 DB 설정 정보가 담긴 파일이 있다면 제외하세요.
+.env
+*.log
