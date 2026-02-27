@@ -43,24 +43,24 @@ public class HttpConnector implements Runnable {
     @Override
     public void run() {
         try {
-            // 1. Selector와 ServerSocketChannel 오픈
+            // Selector와 ServerSocketChannel 오픈
             selector = Selector.open();
             serverChannel = ServerSocketChannel.open();
 
-            // 2. 비차단(Non-blocking) 모드 설정 및 바인딩
+            // 비차단(Non-blocking) 모드 설정 및 바인딩
             serverChannel.configureBlocking(false);
             serverChannel.bind(new InetSocketAddress(port));
 
-            // 3. ServerSocketChannel을 Selector에 등록 (Accept 이벤트 감시)
+            // ServerSocketChannel을 Selector에 등록 (Accept 이벤트 감시)
             serverChannel.register(selector, SelectionKey.OP_ACCEPT);
 
             System.out.println("[NIO Connector] Server started on port " + port);
 
             while (!stopped) {
-                // 4. 이벤트가 발생할 때까지 대기 (Blocking 가능하지만, 스레드 하나만 소모)
+                // 이벤트가 발생할 때까지 대기 (Blocking 가능하지만, 스레드 하나만 소모)
                 if (selector.select(1000) == 0) continue;
 
-                // 5. 발생한 이벤트(SelectionKey)들을 가져옴
+                // 발생한 이벤트(SelectionKey)들을 가져옴
                 Set<SelectionKey> selectedKeys = selector.selectedKeys();
                 Iterator<SelectionKey> iter = selectedKeys.iterator();
 
@@ -101,16 +101,33 @@ public class HttpConnector implements Runnable {
     private void handleRead(SelectionKey key) {
         SocketChannel client = (SocketChannel) key.channel();
         try {
-            // NIO 소켓을 기존 BIO 기반의 Http11Processor에서 쓸 수 있게 소켓 객체 획득
-            // 실제 고성능 서버는 여기서 ByteBuffers를 직접 다루지만,
-            // 학습용이므로 호환성을 위해 소켓을 넘깁니다.
+            // 1. [수정] key.cancel()을 명시적으로 부르지 말고,
+            // 일단 블로킹 모드로 바꿉니다. (NIO 채널은 등록된 상태에서도 가능은 하지만 예외가 날 수 있음)
+            // 만약 에러가 계속된다면, 아예 새로 등록하는 방식을 취합니다.
+            if (key.isValid()) {
+                key.cancel(); // 여기서 취소하면 Selector의 다음 select() 때 정리됩니다.
+            }
+
+            client.configureBlocking(true);
+
             Http11Processor processor = new Http11Processor(handler);
             processor.process(client.socket());
+
+        } catch (Exception e) {
+            System.err.println("[Connector] Processor Error: " + e.getMessage());
+            closeSocket(client);
         } finally {
-            // 처리가 끝나면 다시 Read 이벤트에 관심을 가짐
-            if (client.isOpen()) {
-                key.interestOps(SelectionKey.OP_READ);
-                selector.wakeup(); // Selector 깨우기
+            try {
+                if (client.isOpen()) {
+                    client.configureBlocking(false);
+                    // 2. [핵심] 핵심은 wakeup()과 register()의 순서입니다.
+                    // 기존 키가 cancel되었으므로 새로 register를 해줘야 합니다.
+                    selector.wakeup();
+                    client.register(selector, SelectionKey.OP_READ);
+                }
+            } catch (Exception e) {
+                // 재등록 과정에서 에러가 나면 소켓을 닫는 것이 안전합니다.
+                closeSocket(client);
             }
         }
     }
@@ -121,6 +138,15 @@ public class HttpConnector implements Runnable {
             if (selector != null) selector.close();
             if (serverChannel != null) serverChannel.close();
             workerPool.shutdown();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // 안전한 소켓 닫기를 위한 헬퍼 메서드 추가
+    private void closeSocket(SocketChannel client) {
+        try {
+            if (client != null) client.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

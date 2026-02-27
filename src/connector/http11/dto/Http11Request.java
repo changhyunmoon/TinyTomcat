@@ -1,7 +1,6 @@
-package connector.http11;
+package connector.http11.dto;
 
 import container.session.HttpSession;
-import container.session.SessionManager;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -23,7 +22,10 @@ public class Http11Request {
     private final Map<String, String> cookies = new HashMap<>();
 
     private String requestedSessionId;
+    private HttpSession session; // 서버 내부에서 찾아낸 세션을 담는 공간
     private boolean isRequestedSessionIdFromCookie = false;
+
+    private final Map<String, Object> attributes = new HashMap<>(); // Object인 이유는 어떤 객체든 담기 위해
 
     public Http11Request(InputStream input) throws IOException {
         parse(input);
@@ -135,5 +137,26 @@ public class Http11Request {
     public String toString() {
         return String.format("Http11Request [method=%s, uri=%s, parameters=%s, sessionId=%s]",
                 method, uri, parameters, requestedSessionId);
+    }
+
+    // --- Attributes 관련 메서드 추가 ---
+    public void setAttribute(String name, Object value) {
+        attributes.put(name, value);
+    }
+
+    public Object getAttribute(String name) {
+        return attributes.get(name);
+    }
+
+    public void removeAttribute(String name) {
+        attributes.remove(name);
+    }
+
+    public void setSession(HttpSession session) {
+        this.session = session;
+    }
+
+    public HttpSession getSession() {
+        return this.session;
     }
 }

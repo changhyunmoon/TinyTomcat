@@ -1,4 +1,4 @@
-package connector.http11;
+package connector.http11.dto;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -29,6 +29,10 @@ public class Http11Response {
 
     public void setContentType(String type) {
         this.contentType = type;
+    }
+
+    public void setHeader(String name, String value) {
+        headers.put(name, value);
     }
 
     public void addHeader(String name, String value) {
