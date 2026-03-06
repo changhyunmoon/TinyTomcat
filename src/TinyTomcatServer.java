@@ -29,6 +29,5 @@ public class TinyTomcatServer {
         // 프로그램 종료 시 stop() 호출을 위한 훅 (선택 사항)
         Runtime.getRuntime().addShutdownHook(new Thread(connector::stop));
 
-aa
     }
 }
