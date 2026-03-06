@@ -19,7 +19,7 @@ public class Http11Processor {
         try {
             // Keep-Alive를 지원하기 위한 루프
             while (true) {
-                // 1. HTTP/1.1 요청 파싱 (우리가 만든 Http11Request 객체 생성)
+                // HTTP/1.1 요청 파싱 (우리가 만든 Http11Request 객체 생성)
                 // 만약 스트림에 읽을 데이터가 없다면 여기서 멈춤(Blocking)
                 Http11Request request = new Http11Request(in);
 
@@ -30,10 +30,10 @@ public class Http11Processor {
 
                 System.out.println("[Http11Processor] Handling " + request.getMethod() + " " + request.getUri());
 
-                // 2. 응답 객체 생성
+                // 응답 객체 생성
                 Http11Response response = new Http11Response(out);
 
-                // 3. 서블릿 컨테이너(Context)로 전달하여 로직 실행 (Dispatch)
+                // 서블릿 컨테이너(Context)로 전달하여 로직 실행 (Dispatch)
                 context.dispatch(request, response);
 
                 //실제 브라우저로 응답 데이터 전송

@@ -41,7 +41,6 @@ public class HttpConnector {
             }
         };
 
-        // ThreadFactory를 인자로 받는 스레드 풀 생성
         this.workerPool = Executors.newFixedThreadPool(20, threadFactory);
     }
 
@@ -56,11 +55,9 @@ public class HttpConnector {
 
                 while (running) {
                     try {
-                        // 1. 클라이언트 접속 대기 (Blocking)
                         Socket socket = serverSocket.accept();
                         System.out.println("[TinyTomcat] New connection accepted: " + socket.getInetAddress());
 
-                        // 2. 접속된 소켓을 Worker Pool에 던짐 (비동기 처리)
                         workerPool.execute(() -> protocolHandler.handle(socket));
 
                     } catch (IOException e) {

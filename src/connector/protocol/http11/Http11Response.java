@@ -65,17 +65,17 @@ public class Http11Response implements HttpResponse {
         if (committed) return;
 
         StringBuilder sb = new StringBuilder();
-        // 1. Status Line
+        // Status Line
         String msg = statusMessages.getOrDefault(statusCode, "Unknown");
         sb.append("HTTP/1.1 ").append(statusCode).append(" ").append(msg).append("\r\n");
 
-        // 2. Headers (Content-Length 자동 계산)
+        // Headers (Content-Length 자동 계산)
         headers.put("Content-Length", String.valueOf(body.length));
         for (Map.Entry<String, String> entry : headers.entrySet()) {
             sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\r\n");
         }
 
-        // 3. Empty Line
+        // Empty Line
         sb.append("\r\n");
 
         // 전송
